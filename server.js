@@ -13,6 +13,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/users", usersRouter);
 
+app.get("/", (req, res) => {
+  res.status(200).send({ message: "Bienvenue dans votre interface FlexCart" });
+});
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`SERVER IS RUNNING ON PORT ${PORT}`);
