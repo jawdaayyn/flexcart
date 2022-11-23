@@ -12,6 +12,8 @@ const {
   serverTimestamp,
   deleteDoc,
   updateDoc,
+  query,
+  where,
 } = require("firebase/firestore");
 const {
   getAuth,
@@ -54,10 +56,15 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  const docRef = doc(db, "users", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    res.status(200).send(docSnap.data());
+
+  const q = query(collection(db, "users"), where("uid", "==", id));
+
+  const querySnapshot = await getDocs(q);
+  if (!querySnapshot.empty) {
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+      res.status(200).send({ message: doc.data() });
+    });
   } else {
     res.status(404).send("Utilisateur non trouvé !");
   }
@@ -68,7 +75,7 @@ router.delete(":id", async (req, res) => {
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
     deleteDoc(docRef);
-    deleteUser();
+    // IL FAUT TROUVER POUR DELETE L'USER DE L'AUTH AUSSI deleteUser();
     res.status(200).send("L'utilisateur a bien été supprimé.");
   } else {
     res.status(404).send("Utilisateur non trouvé !");
@@ -76,7 +83,7 @@ router.delete(":id", async (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { email, password } = req.body;
 
   try {
     await createUserWithEmailAndPassword(auth, email, password);
@@ -87,7 +94,7 @@ router.post("/signup", async (req, res) => {
       cart_id: uuidv4(),
       createdAt: serverTimestamp(),
     }).then(() => {
-      res.send("Vous vous êtes bien enregistrés");
+      res.status(200).send("Vous vous êtes bien enregistrés");
     });
   } catch (error) {
     console.log(`Il y a eu une erreur : ${error}`);
@@ -99,12 +106,14 @@ router.post("/signin", async (req, res) => {
   try {
     await signInWithEmailAndPassword(auth, email, password).then(
       (userCredential) => {
-        const user = userCredential.user;
-        res.status(200).send({ message: user });
+        // const user = userCredential.user;
+        res
+          .status(200)
+          .send({ message: userCredential._tokenResponse.idToken });
       }
     );
   } catch (error) {
-    res.status(500).send({ message: error });
+    res.status(404).send({ message: "User not found" });
   }
 });
 

@@ -16,7 +16,8 @@ app.use("/users", usersRouter);
 app.get("/", (req, res) => {
   res.status(200).send({ message: "Bienvenue dans votre interface FlexCart" });
 });
+const { appUrl } = process.env;
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`SERVER IS RUNNING ON PORT ${PORT}`);
+  console.log(`use api on ${appUrl}`);
 });
