@@ -1,5 +1,4 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { initializeApp } = require("firebase/app");
 const {
@@ -14,6 +13,7 @@ const {
   updateDoc,
   query,
   where,
+  setDoc,
 } = require("firebase/firestore");
 const {
   getAuth,
@@ -49,24 +49,19 @@ router.get("/", async (req, res) => {
     const usersList = userSnapshot.docs.map((doc) => doc.data());
     res.status(200).send(usersList);
   } catch (error) {
-    console.log(error);
     res.status(500).send(error);
   }
 });
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
+  const userRef = doc(db, "users", id);
+  const userFound = await getDoc(userRef);
 
-  const q = query(collection(db, "users"), where("uid", "==", id));
-
-  const querySnapshot = await getDocs(q);
-  if (!querySnapshot.empty) {
-    querySnapshot.forEach((doc) => {
-      console.log(doc.id, " => ", doc.data());
-      res.status(200).send({ message: doc.data() });
-    });
+  if (userFound.exists()) {
+    res.status(201).send(userFound.data());
   } else {
-    res.status(404).send("Utilisateur non trouvé !");
+    res.status(404).send("No user found!");
   }
 });
 router.delete(":id", async (req, res) => {
@@ -84,20 +79,25 @@ router.delete(":id", async (req, res) => {
 
 router.post("/signup", async (req, res) => {
   const { email, password } = req.body;
-
+  let cartId = uuidv4();
   try {
     await createUserWithEmailAndPassword(auth, email, password);
-    addDoc(usersCol, {
-      uid: auth.currentUser.uid,
+    setDoc(doc(db, "users", auth.currentUser.uid), {
       email: email,
       password: password,
-      cart_id: uuidv4(),
       createdAt: serverTimestamp(),
-    }).then(() => {
-      res.status(200).send("Vous vous êtes bien enregistrés");
-    });
+      cartId: cartId,
+    })
+      .then(() => {
+        setDoc(doc(db, "carts", cartId), {
+          content: [],
+          uid: auth.currentUser.uid,
+        });
+      })
+      .then(() => {
+        res.status(200).send("Vous vous êtes bien enregistrés");
+      });
   } catch (error) {
-    console.log(`Il y a eu une erreur : ${error}`);
     res.status(400).send(error);
   }
 });
