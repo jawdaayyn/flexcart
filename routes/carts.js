@@ -63,6 +63,7 @@ router.get("/:id", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
+  // AJOUTER UN PRODUIT AU PANIER
   const { id } = req.params; // FINIR L'AJOUT DE PRODUIT AU PANIER
   const { brand, description, name, price, url, image } = req.body;
   const cartRef = doc(db, "carts", id);
@@ -87,6 +88,55 @@ router.put("/:id", async (req, res) => {
       });
     } catch (error) {
       res.status(401).send(error);
+    }
+  } else {
+    res.status(404).send("No cart found!");
+  }
+});
+
+router.get("/:id/:itemid", async (req, res) => {
+  // GET UN PRODUIT PAR SON ID
+  const { id, itemid } = req.params;
+  const cartRef = doc(db, "carts", id);
+  const cartFound = await getDoc(cartRef);
+  if (cartFound.exists()) {
+    let newArray = cartFound.data().content;
+    const result = newArray.filter((item) => item.itemid === itemid);
+    if (result.length === 0) {
+      res.status(404).send("cet item n'existe pas");
+    } else {
+      res.status(201).send(result);
+    }
+  } else {
+    res.status(404).send("No cart found!");
+  }
+});
+router.delete("/:id/:itemid", async (req, res) => {
+  // GET UN PRODUIT PAR SON ID
+  const { id, itemid } = req.params;
+  const cartRef = doc(db, "carts", id);
+  const cartFound = await getDoc(cartRef);
+  if (cartFound.exists()) {
+    let newArray = cartFound.data().content;
+    const result = newArray.filter((item) => item.itemid === itemid);
+    if (result.length === 0) {
+      res.status(201).send("cet item n'existe pas");
+    } else {
+      // L'item est stocké dans la variable result et l'array est newArray.
+      // On commence par choper son index
+      const indexOfObject = newArray.findIndex((object) => {
+        return object.id === itemid;
+      });
+      newArray.splice(indexOfObject, 1);
+      try {
+        await updateDoc(cartRef, {
+          content: newArray,
+        }).then(() => {
+          res.status(200).send("Le panier a bien été modifié.");
+        });
+      } catch (error) {
+        res.status(401).send(error);
+      }
     }
   } else {
     res.status(404).send("No cart found!");
