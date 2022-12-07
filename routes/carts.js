@@ -58,7 +58,7 @@ router.get("/:id", async (req, res) => {
   if (cartFound.exists()) {
     res.status(201).send(cartFound.data());
   } else {
-    res.status(404).send("No cart found!");
+    res.status(404).send("No cart found!zsz");
   }
 });
 
@@ -72,6 +72,8 @@ router.put("/:id", async (req, res) => {
   if (cartFound.exists()) {
     //res.status(201).send(cartFound.data());
     let newArray = cartFound.data().content;
+    const lastItem = newArray.slice(-1);
+    const newId = lastItem[0].itemid + 1;
     newArray.push({
       brand: brand,
       description: description,
@@ -79,6 +81,7 @@ router.put("/:id", async (req, res) => {
       price: price,
       url: url,
       image: image,
+      itemid: newId,
     });
     try {
       await updateDoc(cartRef, {
@@ -90,11 +93,11 @@ router.put("/:id", async (req, res) => {
       res.status(401).send(error);
     }
   } else {
-    res.status(404).send("No cart found!");
+    res.status(404).send("No cart found!ss");
   }
 });
 
-router.get("/:id/:itemid", async (req, res) => {
+router.get("/products/:id/:itemid", async (req, res) => {
   // GET UN PRODUIT PAR SON ID
   const { id, itemid } = req.params;
   const cartRef = doc(db, "carts", id);
@@ -108,7 +111,26 @@ router.get("/:id/:itemid", async (req, res) => {
       res.status(201).send(result);
     }
   } else {
-    res.status(404).send("No cart found!");
+    res.status(404).send("No cart found!zzszszs");
+  }
+});
+
+router.get("/lastitem/:id", async (req, res) => {
+  const { id } = req.params;
+  console.log(id);
+  const cartRef = doc(db, "carts", id);
+  const cartFound = await getDoc(cartRef);
+
+  if (cartFound.exists()) {
+    let newArray = cartFound.data().content;
+    const lastItem = newArray.slice(-1);
+    if (lastItem) {
+      res.status(201).send(lastItem);
+    } else {
+      res.status(404).send("No products in your cart available !");
+    }
+  } else {
+    res.status(404).send("No cart found!zzszszs");
   }
 });
 router.delete("/:id/:itemid", async (req, res) => {
@@ -118,28 +140,33 @@ router.delete("/:id/:itemid", async (req, res) => {
   const cartFound = await getDoc(cartRef);
   if (cartFound.exists()) {
     let newArray = cartFound.data().content;
-    const result = newArray.filter((item) => item.itemid === itemid);
-    if (result.length === 0) {
-      res.status(201).send("cet item n'existe pas");
+
+    const indexOfObject = newArray.findIndex((object) => {
+      if (!object.itemid == itemid) {
+        return null;
+      } else {
+        return object.itemid == itemid;
+      }
+    });
+
+    console.log(indexOfObject); // 👉️ 1
+    if (indexOfObject < 0) {
+      res.status(404).send("didn't found item");
     } else {
-      // L'item est stocké dans la variable result et l'array est newArray.
-      // On commence par choper son index
-      const indexOfObject = newArray.findIndex((object) => {
-        return object.id === itemid;
-      });
       newArray.splice(indexOfObject, 1);
+
       try {
         await updateDoc(cartRef, {
           content: newArray,
         }).then(() => {
-          res.status(200).send("Le panier a bien été modifié.");
+          res.status(200).send("Le produit a bien été supprimé.");
         });
       } catch (error) {
         res.status(401).send(error);
       }
     }
   } else {
-    res.status(404).send("No cart found!");
+    res.status(404).send("Cart not found");
   }
 });
 
