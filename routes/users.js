@@ -84,7 +84,6 @@ router.post("/signup", async (req, res) => {
     await createUserWithEmailAndPassword(auth, email, password);
     setDoc(doc(db, "users", auth.currentUser.uid), {
       email: email,
-      password: password,
       createdAt: serverTimestamp(),
       cartId: cartId,
     })
