@@ -73,7 +73,14 @@ router.put("/:id", async (req, res) => {
     //res.status(201).send(cartFound.data());
     let newArray = cartFound.data().content;
     const lastItem = newArray.slice(-1);
-    const newId = lastItem[0].itemid + 1;
+    let newId;
+    if (lastItem.length == 0) {
+      newId = 1;
+    } else {
+      newId = lastItem[0].itemid + 1;
+    }
+    console.log(newId);
+
     newArray.push({
       brand: brand,
       description: description,
@@ -83,6 +90,7 @@ router.put("/:id", async (req, res) => {
       image: image,
       itemid: newId,
     });
+
     try {
       await updateDoc(cartRef, {
         content: newArray,
@@ -93,7 +101,7 @@ router.put("/:id", async (req, res) => {
       res.status(401).send(error);
     }
   } else {
-    res.status(404).send("No cart found!ss");
+    res.status(404).send("No cart found!");
   }
 });
 
